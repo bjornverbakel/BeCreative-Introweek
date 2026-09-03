@@ -4,7 +4,7 @@ import time
 
 # SETTINGS
 
-COM_PORT = "COM8"
+COM_PORT = "COM11"
 
 AUDIO_FILE = r"C:\Users\bjorn\BeCreative-Introweek\laptop-receiver\audio.aac"
 
@@ -45,7 +45,7 @@ print("Connecting to micro:bit on", COM_PORT)
 ser = serial.Serial(
     COM_PORT,
     115200,
-    timeout=1
+    timeout=0.05
 )
 
 print("Connected!")
@@ -82,10 +82,15 @@ while True:
 
                 print("Jumping to CHAOS at 0:00")
 
-                player.set_time(CHAOS_TIME * 1000)
+                player.stop()
 
-                if not player.is_playing():
-                    player.play()
+                time.sleep(0.1)
+
+                player.play()
+
+                time.sleep(0.2)
+
+                player.set_time(CHAOS_TIME * 1000)
 
 
             # CALM
@@ -108,14 +113,19 @@ while True:
 
             current_time = player.get_time() / 1000
 
-            if current_time >= CHAOS_END:
+            if current_time < 0 or current_time >= CHAOS_END:
 
                 print("Chaos section finished. Looping back to 0:00")
 
-                player.set_time(CHAOS_TIME * 1000)
+                player.stop()
 
-                if not player.is_playing():
-                    player.play()
+                time.sleep(0.1)
+
+                player.play()
+
+                time.sleep(0.2)
+
+                player.set_time(CHAOS_TIME * 1000)
 
 
         time.sleep(0.05)
