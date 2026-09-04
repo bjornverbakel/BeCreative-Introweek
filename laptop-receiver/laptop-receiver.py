@@ -45,6 +45,18 @@ print("Audio started.")
 print("Starting in CHAOS mode.")
 
 
+def jump_to(timestamp):
+    if player.get_state() == vlc.State.Ended:
+        player.stop()
+        player.play()
+        time.sleep(0.1)
+
+    player.set_time(timestamp * 1000)
+
+    if not player.is_playing():
+        player.play()
+
+
 # CONNECT TO MICRO:BIT
 
 print("Connecting to micro:bit on", COM_PORT)
@@ -89,10 +101,7 @@ try:
 
                 print("Jumping to CHAOS at 0:00")
 
-                player.set_time(CHAOS_TIME * 1000)
-
-                if not player.is_playing():
-                    player.play()
+                jump_to(CHAOS_TIME)
 
 
             # CALM
@@ -103,10 +112,7 @@ try:
 
                 print("Jumping to CALM at 0:30")
 
-                player.set_time(CALM_TIME * 1000)
-
-                if not player.is_playing():
-                    player.play()
+                jump_to(CALM_TIME)
 
 
         # Loop chaos section
@@ -123,7 +129,7 @@ try:
 
                     print("Chaos section finished. Looping to 0:00")
 
-                    player.set_time(CHAOS_TIME * 1000)
+                    jump_to(CHAOS_TIME)
 
 
         time.sleep(0.05)
