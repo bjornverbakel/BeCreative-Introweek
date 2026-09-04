@@ -1,37 +1,44 @@
 import serial
 import vlc
 import time
+from pathlib import Path
 
 # SETTINGS
 
 COM_PORT = "COM11"
 
-AUDIO_FILE = r"C:\Users\bjorn\BeCreative-Introweek\laptop-receiver\audio.aac"
+AUDIO_FILE = Path(__file__).parent / "audio.aac"
 
-# Timestamps in seconds
 CHAOS_TIME = 0       # 0:00
 CALM_TIME = 30       # 0:30
-
-# End of the chaos section
 CHAOS_END = 29       # 0:29
+
+# CHECK AUDIO FILE
+
+if not AUDIO_FILE.is_file():
+    raise FileNotFoundError(
+        f"Audio file not found: {AUDIO_FILE}"
+    )
+
+print(f"Using audio file: {AUDIO_FILE}")
 
 # START VLC
 
 print("Starting VLC...")
 
 instance = vlc.Instance()
-
 player = instance.media_player_new()
 
-media = instance.media_new(AUDIO_FILE)
-
+media = instance.media_new(str(AUDIO_FILE))
 player.set_media(media)
 
 player.play()
 
 time.sleep(1)
 
-# Start at CHAOS
+if player.get_state() == vlc.State.Error:
+    raise RuntimeError("VLC could not play the audio file")
+
 player.set_time(CHAOS_TIME * 1000)
 
 print("Audio started.")
@@ -52,18 +59,18 @@ print("Connected!")
 print("Waiting for helmet...")
 print()
 
+# CURRENT STATE
 
-# Current state
 current_state = "CHAOS"
 
 
 # MAIN LOOP
 
-while True:
+try:
 
-    try:
+    while True:
 
-        # CHECK FOR MICRO:BIT MESSAGE
+        # Check for micro:bit message
 
         message = ser.readline().decode(
             "utf-8",
@@ -82,15 +89,10 @@ while True:
 
                 print("Jumping to CHAOS at 0:00")
 
-                player.stop()
-
-                time.sleep(0.1)
-
-                player.play()
-
-                time.sleep(0.2)
-
                 player.set_time(CHAOS_TIME * 1000)
+
+                if not player.is_playing():
+                    player.play()
 
 
             # CALM
@@ -107,44 +109,33 @@ while True:
                     player.play()
 
 
-        # LOOP CHAOS SECTION
+        # Loop chaos section
 
         if current_state == "CHAOS":
 
-            current_time = player.get_time() / 1000
+            current_time_ms = player.get_time()
 
-            if current_time < 0 or current_time >= CHAOS_END:
+            if current_time_ms >= 0:
 
-                print("Chaos section finished. Looping back to 0:00")
+                current_time = current_time_ms / 1000
 
-                player.stop()
+                if current_time >= CHAOS_END:
 
-                time.sleep(0.1)
+                    print("Chaos section finished. Looping to 0:00")
 
-                player.play()
-
-                time.sleep(0.2)
-
-                player.set_time(CHAOS_TIME * 1000)
+                    player.set_time(CHAOS_TIME * 1000)
 
 
         time.sleep(0.05)
 
 
-    except KeyboardInterrupt:
+except KeyboardInterrupt:
 
-        print()
-        print("Stopping installation...")
-
-        player.stop()
-
-        ser.close()
-
-        break
+    print()
+    print("Stopping installation...")
 
 
-    except Exception as e:
+finally:
 
-        print("Error:", e)
-
-        time.sleep(1)
+    player.stop()
+    ser.close()
